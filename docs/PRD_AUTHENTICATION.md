@@ -218,7 +218,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 **Canonical build order**: **database migrations → D1 client → services → API endpoints → UI → protection / role routing**. Each phase follows **TDD**: tests first (red), then implementation (green), then refactor.
 
-### Phase 1: Database migrations - ⏳ PLANNED
+### Phase 1: Database migrations - ✅ COMPLETED
 
 **Objective**: `users` table and indexes exist locally via Wrangler migration.
 
@@ -421,6 +421,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Not started — awaiting PRD review  
-**Status**: ⏳ PLANNED  
-**Next Steps**: Implement Phase 1 (migrations), then Phase 2 (D1 client + TDD), then services → endpoints → UI → guards.
+**Current Phase**: Phase 2 — D1 client (TDD)  
+**Status**: Phase 1 complete  
+**Next Steps**: Implement `lib/d1-client.ts` + colocated tests, then services → endpoints → UI → guards.

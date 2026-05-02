@@ -41,6 +41,20 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Local D1 database (migrations)
+
+SQL migrations for Cloudflare D1 live in `migrations/`. Apply them to the **local** D1 instance for `tna-app-db` (binding `tna_app_db` in `wrangler.jsonc`). Do **not** apply migrations to the remote database from automation unless you explicitly intend to update production data.
+
+```bash
+npm run db:migrate:local
+```
+
+After binding or schema changes, regenerate Worker env types:
+
+```bash
+npm run cf-typegen
+```
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:

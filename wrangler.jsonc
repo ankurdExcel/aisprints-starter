@@ -22,7 +22,8 @@
 		{
 			"binding": "tna_app_db",
 			"database_name": "tna-app-db",
-			"database_id": "d33c23ef-9931-4d4d-a00d-ae7225920c09"
+			"database_id": "d33c23ef-9931-4d4d-a00d-ae7225920c09",
+			"migrations_dir": "migrations"
 		}
 	]
 	/**
