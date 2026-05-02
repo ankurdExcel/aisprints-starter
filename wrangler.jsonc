@@ -17,7 +17,14 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "tna_app_db",
+			"database_name": "tna-app-db",
+			"database_id": "d33c23ef-9931-4d4d-a00d-ae7225920c09"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
