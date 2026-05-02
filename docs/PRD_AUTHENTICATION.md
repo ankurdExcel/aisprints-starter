@@ -251,7 +251,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ---
 
-### Phase 3: Services & auth primitives - ⏳ PLANNED
+### Phase 3: Services & auth primitives - ✅ COMPLETED
 
 **Objective**: Server-side **user persistence** (create user, find by email), **password hashing/verification**, and **JWT create/verify** used exclusively by services and route handlers—not ad hoc SQL in routes.
 
@@ -263,8 +263,9 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 3. Implement user service functions using `d1-client` only for SQL.
 
 **Deliverables**
-- `lib/auth/password.ts`, `lib/auth/jwt.ts` + tests.
-- `lib/services/user-service.ts` (or `lib/services/auth-user-service.ts`) + colocated `.test.ts`.
+- `src/lib/auth/password.ts`, `jwt.ts`, `roles.ts` + colocated tests.
+- `src/lib/services/user-service.ts` + `user-service.test.ts` (mocked `@/lib/d1-client`).
+- Dependencies: `bcryptjs`, `jose`; `.dev.vars.example` + README document `JWT_SECRET` (≥32 chars).
 
 ---
 
@@ -319,7 +320,8 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 - `wrangler.jsonc` — D1 binding `tna_app_db`.
 - `src/lib/d1-client.ts` + `src/lib/d1-client.test.ts` — All SQL execution (Phase 2); import as `@/lib/d1-client`.
-- `lib/auth/*` — JWT and password helpers.
+- `src/lib/auth/password.ts`, `jwt.ts`, `roles.ts` + tests — hashing and HS256 session JWT (Phase 3).
+- `src/lib/services/user-service.ts` + test — user CRUD/read for auth (Phase 3).
 - `app/api/auth/*/route.ts` — Route handlers.
 - `middleware.ts` — Optional cookie/JWT edge checks (respect Next.js + OpenNext constraints on Edge runtime).
 - `.dev.vars` — `JWT_SECRET` and any auth-related secrets (document in README, never commit secrets).
@@ -421,6 +423,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Phase 3 — Services & auth primitives (TDD)  
-**Status**: Phases 1–2 complete  
-**Next Steps**: User service + password/JWT modules and tests, then API routes.
+**Current Phase**: Phase 4 — API endpoints (auth routes + cookies)  
+**Status**: Phases 1–3 complete  
+**Next Steps**: `POST /api/auth/signup`, `login`, `logout`, `GET me` with zod + HTTP-only cookies.

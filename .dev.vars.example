@@ -1,2 +1,5 @@
 # Load .env.development* files when running `wrangler dev`
 NEXTJS_ENV=development
+
+# HS256 session signing — must be at least 32 characters (copy to `.dev.vars` locally; never commit real secrets)
+JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars

@@ -63,6 +63,10 @@ npm test
 
 Uses [Vitest](https://vitest.dev/) (see `vitest.config.ts`). D1 helpers are covered in `src/lib/d1-client.test.ts` with mocked `D1Database` — no real D1 connection required.
 
+### Auth (Phase 3+)
+
+Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 characters**, used for HS256 session tokens in API routes.
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:
