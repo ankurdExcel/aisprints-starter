@@ -269,7 +269,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ---
 
-### Phase 4: API endpoints - ⏳ PLANNED
+### Phase 4: API endpoints - ✅ COMPLETED
 
 **Objective**: `POST` signup, `POST` login, `POST` logout, optional `GET` me—wired to services and cookie helpers.
 
@@ -280,7 +280,9 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 2. Set/clear HTTP-only session cookie with correct attributes for dev vs prod.
 
 **Deliverables**
-- `app/api/auth/**/route.ts` + colocated `*.test.ts` or `__tests__` next to routes per project convention.
+- `src/app/api/auth/signup|login|logout|me/route.ts` + colocated `route.test.ts`.
+- `src/lib/auth/auth-schemas.ts`, `session-cookie.ts`, `session-constants.ts`, `get-jwt-secret.ts` + tests where applicable.
+- Cookie name `qm_session`; `getCloudflareContext({ async: true })` + `getDatabase(env)` per route.
 
 ---
 
@@ -322,7 +324,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 - `src/lib/d1-client.ts` + `src/lib/d1-client.test.ts` — All SQL execution (Phase 2); import as `@/lib/d1-client`.
 - `src/lib/auth/password.ts`, `jwt.ts`, `roles.ts` + tests — hashing and HS256 session JWT (Phase 3).
 - `src/lib/services/user-service.ts` + test — user CRUD/read for auth (Phase 3).
-- `app/api/auth/*/route.ts` — Route handlers.
+- `src/app/api/auth/signup|login|logout|me/route.ts` — Auth HTTP handlers (Phase 4).
 - `middleware.ts` — Optional cookie/JWT edge checks (respect Next.js + OpenNext constraints on Edge runtime).
 - `.dev.vars` — `JWT_SECRET` and any auth-related secrets (document in README, never commit secrets).
 
@@ -423,6 +425,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Phase 4 — API endpoints (auth routes + cookies)  
-**Status**: Phases 1–3 complete  
-**Next Steps**: `POST /api/auth/signup`, `login`, `logout`, `GET me` with zod + HTTP-only cookies.
+**Current Phase**: Phase 5 — Auth UI (shadcn signup/login)  
+**Status**: Phases 1–4 complete  
+**Next Steps**: Signup/login pages, form validation, redirects by role; optional faculty/student shells.

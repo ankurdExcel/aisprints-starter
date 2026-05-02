@@ -16,6 +16,7 @@ import {
 	createUser,
 	findUserByEmail,
 	findUserById,
+	userRowToPublicUser,
 } from "./user-service";
 
 const mockDb = {} as D1Database;
@@ -159,6 +160,32 @@ describe("findUserByEmail", () => {
 			updated_by: null,
 		});
 		expect(await findUserByEmail(mockDb, "a@b.com")).toBeNull();
+	});
+});
+
+describe("userRowToPublicUser", () => {
+	it("maps snake_case row to PublicUser", () => {
+		const u = userRowToPublicUser({
+			id: "1",
+			email: "e@e.com",
+			password_hash: "hash",
+			first_name: "F",
+			last_name: "L",
+			role: "student",
+			created_at: "c",
+			updated_at: "u",
+			created_by: null,
+			updated_by: null,
+		});
+		expect(u).toEqual({
+			id: "1",
+			email: "e@e.com",
+			firstName: "F",
+			lastName: "L",
+			role: "student",
+			createdAt: "c",
+			updatedAt: "u",
+		});
 	});
 });
 

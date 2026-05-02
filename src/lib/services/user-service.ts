@@ -179,3 +179,16 @@ export async function findUserById(
 		updatedAt: row.updated_at,
 	};
 }
+
+/** Map a stored user row (e.g. after login lookup) to the API-safe shape. */
+export function userRowToPublicUser(row: UserRow): PublicUser {
+	return {
+		id: row.id,
+		email: row.email,
+		firstName: row.first_name,
+		lastName: row.last_name,
+		role: row.role,
+		createdAt: row.created_at,
+		updatedAt: row.updated_at,
+	};
+}

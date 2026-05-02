@@ -12,7 +12,8 @@ export async function hashPassword(
 	return new Promise((resolve, reject) => {
 		bcrypt.hash(plain, saltRounds, (err, hash) => {
 			if (err) reject(err);
-			else resolve(hash);
+			else if (typeof hash === "string") resolve(hash);
+			else reject(new Error("bcrypt.hash completed without a hash"));
 		});
 	});
 }

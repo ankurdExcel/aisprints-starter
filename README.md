@@ -67,6 +67,15 @@ Uses [Vitest](https://vitest.dev/) (see `vitest.config.ts`). D1 helpers are cove
 
 Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 characters**, used for HS256 session tokens in API routes.
 
+**Session cookie:** `qm_session` (HttpOnly, SameSite=Lax; `Secure` in production).
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `POST` | `/api/auth/signup` | Register; sets session cookie |
+| `POST` | `/api/auth/login` | Login; sets session cookie |
+| `POST` | `/api/auth/logout` | Clears session cookie |
+| `GET` | `/api/auth/me` | Current user from cookie + D1 |
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:
