@@ -303,7 +303,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ### Phase 6: Protection & role routing - ✅ COMPLETED
 
-**Objective**: Middleware or layout guards; faculty vs student landing shells.
+**Objective**: Edge middleware JWT verification and role-based access for `/faculty/**` and `/student/**` (shared header/footer and placeholder copy are **Phase 7**).
 
 **TDD note**: Unit-test small pure helpers (e.g. “required role from JWT payload”) if middleware is hard to run in Vitest; integration test optional.
 
@@ -313,7 +313,25 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 **Deliverables**
 - `src/middleware.ts` + `src/lib/auth/route-guard.ts` + `route-guard.test.ts`; `src/lib/auth/jwt-verify.ts` (middleware imports this entry only, not full `jwt` barrel).
-- `/faculty` and `/student` remain minimal shells but are now protected.
+- Route families `/faculty/**` and `/student/**` are protected as above; unauthenticated or wrong-role requests do not reach role pages without redirect.
+
+---
+
+### Phase 7: Role shells (faculty & student) & signup default - ✅ COMPLETED
+
+**Objective**: Shared app shell for both roles and role-specific **placeholder** home pages ahead of `docs/PRD_MCQ_AND_ATTEMPTS.md` (which replaces these UIs with real MCQ/quiz flows). Default new signups to **faculty** while still allowing **student**.
+
+**Tasks**
+1. **Signup default role**: `faculty` pre-selected on `/signup` (users may still choose `student`).
+2. **Shared chrome**: `src/app/faculty/layout.tsx` and `src/app/student/layout.tsx` use `src/components/app/app-shell-header.tsx` and `app-shell-footer.tsx` — QuizMaker home link (`homeHref` `/faculty` vs `/student`), profile placeholder, **Logout** via `POST /api/auth/logout`, footer **Copyright Excelsoft Technologies**.
+3. **Faculty `/faculty`**: MCQ listing placeholder—**No MCQs available.** (or equivalent); **Create MCQ** present but **disabled** until MCQ PRD work enables it.
+4. **Student `/student`**: Quizzes placeholder—**No quizzes available.** until MCQ student flows ship.
+
+**Deliverables**
+- `src/app/faculty/layout.tsx`, `src/app/student/layout.tsx`, `src/components/app/app-shell-header.tsx`, `src/components/app/app-shell-footer.tsx`, `src/app/faculty/page.tsx`, `src/app/student/page.tsx`.
+- Signup form default `role: "faculty"` in `src/app/(auth)/signup/page.tsx`.
+
+**Note**: Full MCQ create/list, student quiz list, and attempts belong to the MCQ PRD; that document’s **Current Status** records these placeholders as already done so Phases 4–5 start from wiring, not from empty routes.
 
 ---
 
@@ -328,6 +346,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 - `src/app/api/auth/signup|login|logout|me/route.ts` — Auth HTTP handlers (Phase 4).
 - `src/middleware.ts` — Edge JWT checks for `/faculty/**` and `/student/**` (no D1); `src/lib/auth/route-guard.ts` for path role + safe `returnUrl`.
 - `src/lib/auth/jwt-verify.ts`, `jwt-sign.ts`, `jwt-crypto.ts` — Split so middleware does not import `jose` JWE paths (Edge-safe).
+- `src/app/faculty/layout.tsx`, `src/app/student/layout.tsx` + `src/components/app/app-shell-*` — Shared header/footer (logout, copyright); faculty MCQ placeholder on `/faculty`; student quiz placeholder on `/student`.
 - `.dev.vars` — `JWT_SECRET` and any auth-related secrets (document in README, never commit secrets).
 
 ### Implementation Patterns
@@ -427,6 +446,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Auth PRD complete (Phases 1–6)  
-**Status**: All authentication phases in this document are implemented.  
-**Next Steps**: Product features per other PRDs (e.g. MCQ); optional hardening (rate limits, refresh tokens).
+**Current Phase**: Phase 7 complete — **faculty and student** shells + placeholders; further numbered work → `docs/PRD_MCQ_AND_ATTEMPTS.md`  
+**Status**: Phases 1–7 in this document are implemented for the items listed per phase.  
+**Next Steps**: Implement MCQ PRD (migrations → services → APIs → replace `/faculty` placeholder and enable **Create MCQ** → replace `/student` placeholder with quiz/attempt flows); optional auth hardening (rate limits, refresh tokens).

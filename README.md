@@ -80,6 +80,8 @@ Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 charact
 
 **Route protection (Phase 6):** `src/middleware.ts` guards `/faculty/**` (faculty JWT) and `/student/**` (student JWT) using the cookie + `JWT_SECRET` only (no D1). Unauthenticated users are sent to `/login?returnUrl=…`; wrong role is redirected to their own dashboard.
 
+**Role shells (Phase 7):** `/faculty` and `/student` use shared `AppShellHeader` / `AppShellFooter` (`src/components/app/`) via each route’s `layout.tsx`—profile placeholder, logout, **Copyright Excelsoft Technologies**. Faculty: MCQ list placeholder + **Create MCQ** disabled until the MCQ PRD. Student: **No quizzes available.** Signup defaults to **faculty** role.
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:

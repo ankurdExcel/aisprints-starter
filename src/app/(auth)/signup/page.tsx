@@ -101,7 +101,7 @@ function SignupPageInner() {
 			email: "",
 			password: "",
 			confirmPassword: "",
-			role: "student",
+			role: "faculty",
 		},
 	});
 

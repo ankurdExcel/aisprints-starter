@@ -4,6 +4,8 @@
 
 This document covers faculty-facing multiple-choice question (MCQ) management—list, create, edit, delete—and the data model and APIs for students to take quizzes, submit answers, and record attempts with configurable attempt limits and per-question response tracking. It builds on authentication (see `PRD_AUTHENTICATION.md`): faculty manage MCQs; students consume them and generate scored attempts.
 
+**Already in the repo (auth Phase 6–7, outside MCQ numbered phases below):** Protected **`/faculty`** and **`/student`** routes with a shared app shell (`src/components/app/app-shell-header.tsx`, `app-shell-footer.tsx`), JWT middleware, and **placeholder** UIs—faculty shows “No MCQs available.” plus a **disabled** “Create MCQ” button; student shows “No quizzes available.” MCQ work **replaces and wires** these placeholders; it does not need to recreate routing or the shell.
+
 ---
 
 ## Business Requirements
@@ -35,7 +37,7 @@ This document covers faculty-facing multiple-choice question (MCQ) management—
 - Next.js App Router, Server Actions and/or `app/api` routes per project conventions.
 - Cloudflare D1 via shared **`@/lib/d1-client`** (`src/lib/d1-client.ts`, delivered in **`PRD_AUTHENTICATION.md` Phase 2**). If MCQ work starts before that exists, complete the D1 client phase first—the MCQ track does not duplicate the client. Binding: `tna_app_db` per `wrangler.jsonc`.
 - shadcn/ui for tables, dialogs, forms, toasts (e.g. Sonner), badges.
-- Faculty routes require `role === 'faculty'`; student routes require `role === 'student'`.
+- Faculty routes require `role === 'faculty'`; student routes require `role === 'student'`. **Implemented:** `src/middleware.ts` + layouts under `src/app/faculty/` and `src/app/student/` (see `PRD_AUTHENTICATION.md` Phases 6–7).
 
 ### Data Model Strategy
 
@@ -222,9 +224,13 @@ CREATE INDEX idx_mcq_options_question ON mcq_options(question_id);
 
 #### Faculty dashboard (`/faculty` or `/faculty/mcqs`)
 
+**Current (placeholder, auth Phase 7):** `src/app/faculty/page.tsx` — heading + short copy, **“No MCQs available.”**, and **Create MCQ** disabled until APIs and **MCQ Phase 4** ship.
+
+**Target (MCQ Phase 4):** Replace/enhance the placeholder with:
+
 - Table or card list of MCQs with actions: Edit, Delete.
-- Primary CTA: “Add MCQ” → sheet/dialog or dedicated `/faculty/mcqs/new`.
-- Empty state copy in professor voice.
+- Primary CTA: “Add MCQ” / “Create MCQ” (enabled) → sheet/dialog or dedicated `/faculty/mcqs/new` if split routes.
+- Empty state copy in professor voice (can replace the bare placeholder line).
 - Delete: confirm dialog; toast on success/failure.
 
 #### Faculty MCQ form (new / edit)
@@ -234,6 +240,10 @@ CREATE INDEX idx_mcq_options_question ON mcq_options(question_id);
 - Save → toast; redirect or inline refresh list.
 
 #### Student quiz UI (later phase)
+
+**Current (placeholder, auth Phase 7):** `src/app/student/page.tsx` — **“No quizzes available.”** until **MCQ Phase 5** lists real quizzes and attempt flows.
+
+**Target (MCQ Phase 5):**
 
 - Show one question at a time or all on one page (product choice); submit triggers attempt creation.
 - After submit: show score and professor-flavored feedback.
@@ -292,7 +302,10 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 **Canonical build order**: **database migrations → (prerequisite: shared D1 client from auth) → services → API endpoints → faculty UI → student quiz/attempts → hardening / reporting**. Each phase uses **TDD**: failing tests first, then implementation until green.
 
-**Prerequisite**: `src/lib/d1-client.ts` from **`PRD_AUTHENTICATION.md` Phase 2**. If the client is not yet in the repo, complete that phase before MCQ **Phase 2** service tests that depend on SQL helpers.
+**Prerequisites**
+
+1. **`src/lib/d1-client.ts`** from **`PRD_AUTHENTICATION.md` Phase 2**. If the client is not yet in the repo, complete that phase before MCQ **Phase 2** service tests that depend on SQL helpers.
+2. **Role shells (optional for migrations, required before meaningful UI):** `PRD_AUTHENTICATION.md` **Phases 6–7** — middleware, `/faculty` and `/student` layouts, shared header/footer, and placeholder copy as described in the Overview. **Status: done** in this repo.
 
 ### Phase 1: Database migrations - ⏳ PLANNED
 
@@ -350,9 +363,10 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 **Tasks**
 1. Data table, dialog/sheet forms, toasts (e.g. Sonner).
 2. `lib/copy/professor.ts` wired to user-visible strings.
+3. **Enable** the existing **Create MCQ** control on `src/app/faculty/page.tsx` (or move logic to `/faculty/mcqs` if reorganized) and replace the static empty state with data from **Phase 3** APIs.
 
 **Deliverables**
-- Pages under `app/(faculty)/...` + targeted `.test.tsx` where valuable.
+- Pages under `src/app/faculty/...` (App Router; align with existing `layout.tsx`) + targeted `.test.tsx` / `page.test.ts` where valuable.
 
 ---
 
@@ -365,9 +379,10 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 **Tasks**
 1. Ensure quiz–question linkage for MVP policy.
 2. Student routes + attempt API; no answer key leakage.
+3. **Replace** the placeholder copy on `src/app/student/page.tsx` with quiz list / take-quiz / results flows powered by APIs.
 
 **Deliverables**
-- Student pages + APIs + passing unit tests.
+- Student pages under `src/app/student/...` + APIs + passing unit tests.
 
 ---
 
@@ -390,11 +405,19 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 ### Key Files (expected)
 
-- `lib/services/mcq-service.ts` — CRUD + transactions for question + options.
-- `lib/services/quiz-attempt-service.ts` — attempt creation, limit check, grading.
-- `app/api/faculty/mcqs/**` or Server Actions in `app/(faculty)/actions.ts`.
-- `components/faculty/mcq-*` — table, form, delete dialog.
-- `lib/copy/professor.ts` — centralized strings.
+**Existing (auth / shell — do not duplicate)**
+
+- `src/app/faculty/layout.tsx`, `src/app/student/layout.tsx` — role layouts using `AppShellHeader` / `AppShellFooter`.
+- `src/components/app/app-shell-header.tsx`, `src/components/app/app-shell-footer.tsx` — shared chrome.
+- `src/app/faculty/page.tsx`, `src/app/student/page.tsx` — placeholders to evolve in Phases 4–5.
+
+**MCQ track (to add)**
+
+- `src/lib/services/mcq-service.ts` — CRUD + transactions for question + options.
+- `src/lib/services/quiz-attempt-service.ts` — attempt creation, limit check, grading.
+- `src/app/api/faculty/mcqs/**` or Server Actions colocated with faculty routes.
+- `src/components/faculty/mcq-*` (or `src/components/mcq/*`) — table, form, delete dialog.
+- `src/lib/copy/professor.ts` — centralized strings.
 
 ### Implementation Patterns
 
@@ -451,7 +474,7 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 ### Internal
 
-- `PRD_AUTHENTICATION.md`: `users`, session, role guards, and **`src/lib/d1-client.ts`** (Phase 2)—required before MCQ service TDD.
+- `PRD_AUTHENTICATION.md`: `users`, session, **`src/middleware.ts`** role guards, **`/faculty` / `/student` shells** (Phases 6–7), and **`src/lib/d1-client.ts`** (Phase 2)—required before MCQ service TDD and before replacing placeholder UIs.
 - shadcn/ui, zod.
 
 ### External
@@ -487,6 +510,6 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Not started — awaiting PRD review  
-**Status**: ⏳ PLANNED  
-**Next Steps**: After auth + D1 client: migrations → services (TDD) → endpoints (TDD) → UI → student attempts → hardening.
+**Current Phase**: MCQ **Phase 1** (migrations) — next up for this document’s numbered work  
+**Status**: Auth + D1 client + **faculty/student placeholder shells** are in the repo (`PRD_AUTHENTICATION.md` Phases 2–7). MCQ schema and services are **not** started here yet.  
+**Next Steps**: D1 migrations (Phase 1) → `mcq-service` TDD (Phase 2) → faculty APIs (Phase 3) → replace `/faculty` placeholder UI (Phase 4) → student attempts + `/student` UI (Phase 5) → hardening (Phase 6).
