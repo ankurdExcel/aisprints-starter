@@ -15,16 +15,6 @@ export const dynamic = "force-dynamic";
 const UNAUTH = { message: "Unauthorized" };
 
 export async function GET(request: Request) {
-	let secret: string;
-	try {
-		secret = getJwtSecret();
-	} catch {
-		return NextResponse.json(
-			{ message: "Server configuration error" },
-			{ status: 500 },
-		);
-	}
-
 	const token = parseCookieValue(
 		request.headers.get("cookie"),
 		SESSION_COOKIE_NAME,
@@ -33,9 +23,18 @@ export async function GET(request: Request) {
 		return NextResponse.json(UNAUTH, { status: 401 });
 	}
 
+	let secret: string;
 	try {
-		const payload = await verifySessionToken(token, secret);
 		const { env } = await getCloudflareContext({ async: true });
+		try {
+			secret = getJwtSecret(env as Cloudflare.Env);
+		} catch {
+			return NextResponse.json(
+				{ message: "Server configuration error" },
+				{ status: 500 },
+			);
+		}
+		const payload = await verifySessionToken(token, secret);
 		const db = getDatabase(env as Cloudflare.Env);
 		const user = await findUserById(db, payload.sub);
 		if (!user) {

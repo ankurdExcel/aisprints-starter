@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 	replace: vi.fn(),
 	toastError: vi.fn(),
 	toastSuccess: vi.fn(),
+	searchParams: new URLSearchParams(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,6 +18,7 @@ vi.mock("next/navigation", () => ({
 		push: vi.fn(),
 		prefetch: vi.fn(),
 	}),
+	useSearchParams: () => mocks.searchParams,
 }));
 
 vi.mock("sonner", () => ({
@@ -36,6 +38,7 @@ const fetchMock = vi.fn();
 describe("SignupPage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mocks.searchParams = new URLSearchParams();
 		vi.stubGlobal("fetch", fetchMock);
 		fetchMock.mockImplementation((input: RequestInfo | URL) => {
 			const url = typeof input === "string" ? input : input.toString();

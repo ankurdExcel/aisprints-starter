@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 	replace: vi.fn(),
 	toastError: vi.fn(),
 	toastSuccess: vi.fn(),
+	searchParams: new URLSearchParams(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,6 +18,7 @@ vi.mock("next/navigation", () => ({
 		push: vi.fn(),
 		prefetch: vi.fn(),
 	}),
+	useSearchParams: () => mocks.searchParams,
 }));
 
 vi.mock("sonner", () => ({
@@ -36,6 +38,7 @@ const fetchMock = vi.fn();
 describe("LoginPage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mocks.searchParams = new URLSearchParams();
 		vi.stubGlobal("fetch", fetchMock);
 		fetchMock.mockImplementation((input: RequestInfo | URL) => {
 			const url = typeof input === "string" ? input : input.toString();
@@ -98,6 +101,51 @@ describe("LoginPage", () => {
 		await waitFor(() => {
 			expect(mocks.replace).toHaveBeenCalledWith("/faculty");
 			expect(mocks.toastSuccess).toHaveBeenCalled();
+		});
+	});
+
+	it("redirects faculty to returnUrl when safe and role matches", async () => {
+		mocks.searchParams = new URLSearchParams({
+			returnUrl: "/faculty/settings?tab=1",
+		});
+		const user = userEvent.setup();
+		fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url.includes("/api/auth/me")) {
+				return Promise.resolve(new Response(null, { status: 401 }));
+			}
+			if (url.includes("/api/auth/login") && init?.method === "POST") {
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							user: {
+								id: "u1",
+								email: "a@b.com",
+								firstName: "A",
+								lastName: "B",
+								role: "faculty",
+								createdAt: "",
+								updatedAt: "",
+							},
+						}),
+						{ status: 200 },
+					),
+				);
+			}
+			return Promise.resolve(new Response(null, { status: 500 }));
+		});
+
+		const { default: LoginPage } = await import("./page");
+		render(createElement(LoginPage));
+
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+		await user.type(screen.getByLabelText(/email/i), "teacher@school.edu");
+		await user.type(screen.getByLabelText(/^password$/i), "password123");
+		await user.click(screen.getByRole("button", { name: /log in/i }));
+
+		await waitFor(() => {
+			expect(mocks.replace).toHaveBeenCalledWith("/faculty/settings?tab=1");
 		});
 	});
 

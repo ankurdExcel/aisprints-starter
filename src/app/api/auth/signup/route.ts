@@ -14,16 +14,6 @@ import { createUser } from "@/lib/services/user-service";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-	let secret: string;
-	try {
-		secret = getJwtSecret();
-	} catch {
-		return NextResponse.json(
-			{ message: "Server configuration error" },
-			{ status: 500 },
-		);
-	}
-
 	let body: unknown;
 	try {
 		body = await request.json();
@@ -36,8 +26,17 @@ export async function POST(request: Request) {
 		return NextResponse.json(formatZodError(parsed.error), { status: 400 });
 	}
 
+	let secret: string;
 	try {
 		const { env } = await getCloudflareContext({ async: true });
+		try {
+			secret = getJwtSecret(env as Cloudflare.Env);
+		} catch {
+			return NextResponse.json(
+				{ message: "Server configuration error" },
+				{ status: 500 },
+			);
+		}
 		const db = getDatabase(env as Cloudflare.Env);
 		const result = await createUser(db, parsed.data);
 

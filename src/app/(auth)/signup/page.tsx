@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -31,10 +31,15 @@ import {
 	type SignupFormValues,
 	signupFormSchema,
 } from "@/lib/auth/client-schemas";
-import { dashboardPathForRole } from "@/lib/auth/dashboard-path";
+import { resolvePostAuthRedirect } from "@/lib/auth/route-guard";
 import type { UserRole } from "@/lib/auth/roles";
 
 const FORM_ID = "signup-form";
+
+function authHref(base: "/login" | "/signup", returnUrl: string | null): string {
+	if (!returnUrl) return base;
+	return `${base}?returnUrl=${encodeURIComponent(returnUrl)}`;
+}
 
 async function readErrorMessage(res: Response): Promise<string> {
 	try {
@@ -53,8 +58,24 @@ async function readErrorMessage(res: Response): Promise<string> {
 	return "Something went wrong";
 }
 
-export default function SignupPage() {
+function SignupCardFallback() {
+	return (
+		<Card className="w-full max-w-md">
+			<CardHeader>
+				<CardTitle>Create account</CardTitle>
+				<CardDescription>Sign up as faculty or student.</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<p className="text-sm text-muted-foreground">Loading…</p>
+			</CardContent>
+		</Card>
+	);
+}
+
+function SignupPageInner() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const returnUrl = searchParams.get("returnUrl");
 
 	useEffect(() => {
 		let cancelled = false;
@@ -64,13 +85,13 @@ export default function SignupPage() {
 			const data: unknown = await res.json();
 			const role = (data as { user?: { role?: UserRole } }).user?.role;
 			if (role === "faculty" || role === "student") {
-				router.replace(dashboardPathForRole(role));
+				router.replace(resolvePostAuthRedirect(role, returnUrl));
 			}
 		})();
 		return () => {
 			cancelled = true;
 		};
-	}, [router]);
+	}, [router, returnUrl]);
 
 	const form = useForm<SignupFormValues>({
 		resolver: zodResolver(signupFormSchema),
@@ -104,11 +125,13 @@ export default function SignupPage() {
 		const role = (data as { user?: { role?: UserRole } }).user?.role;
 		if (role === "faculty" || role === "student") {
 			toast.success("Account created");
-			router.replace(dashboardPathForRole(role));
+			router.replace(resolvePostAuthRedirect(role, returnUrl));
 			return;
 		}
 		toast.error("Unexpected response");
 	});
+
+	const loginHref = authHref("/login", returnUrl);
 
 	return (
 		<Card className="w-full max-w-md">
@@ -252,11 +275,22 @@ export default function SignupPage() {
 				</Button>
 				<p className="text-center text-sm text-muted-foreground sm:mr-auto sm:text-left">
 					Already have an account?{" "}
-					<Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+					<Link
+						href={loginHref}
+						className="font-medium text-primary underline-offset-4 hover:underline"
+					>
 						Log in
 					</Link>
 				</p>
 			</CardFooter>
 		</Card>
+	);
+}
+
+export default function SignupPage() {
+	return (
+		<Suspense fallback={<SignupCardFallback />}>
+			<SignupPageInner />
+		</Suspense>
 	);
 }

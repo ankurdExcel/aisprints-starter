@@ -65,7 +65,7 @@ Uses [Vitest](https://vitest.dev/) (see `vitest.config.ts`). D1 helpers are cove
 
 ### Auth (Phase 3+)
 
-Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 characters**, used for HS256 session tokens in API routes.
+Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 characters**, used for HS256 session tokens in **API routes** and in **Next.js middleware** (`src/middleware.ts`). Missing or short secret returns **500** for protected routes in production-like checks.
 
 **Session cookie:** `qm_session` (HttpOnly, SameSite=Lax; `Secure` in production).
 
@@ -76,7 +76,9 @@ Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 charact
 | `POST` | `/api/auth/logout` | Clears session cookie |
 | `GET` | `/api/auth/me` | Current user from cookie + D1 |
 
-**Auth UI (Phase 5):** `/login`, `/signup` (session cookie on success). Role landing placeholders: `/faculty`, `/student`.
+**Auth UI (Phase 5):** `/login`, `/signup` (session cookie on success). **`returnUrl` query** (same-origin path only): after login/signup, redirect there if it matches the user’s role area; otherwise `/faculty` or `/student`.
+
+**Route protection (Phase 6):** `src/middleware.ts` guards `/faculty/**` (faculty JWT) and `/student/**` (student JWT) using the cookie + `JWT_SECRET` only (no D1). Unauthenticated users are sent to `/login?returnUrl=…`; wrong role is redirected to their own dashboard.
 
 ## Preview
 

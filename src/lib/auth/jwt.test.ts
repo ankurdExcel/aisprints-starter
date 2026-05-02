@@ -1,5 +1,6 @@
+import { SignJWT } from "jose/jwt/sign";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as jose from "jose";
+
 import { createSessionToken, verifySessionToken } from "./jwt";
 
 const SECRET =
@@ -44,7 +45,7 @@ describe("createSessionToken / verifySessionToken", () => {
 
 	it("rejects expired tokens", async () => {
 		const key = new TextEncoder().encode(SECRET);
-		const token = await new jose.SignJWT({
+		const token = await new SignJWT({
 			email: "old@e.com",
 			role: "student",
 		})
@@ -61,7 +62,7 @@ describe("createSessionToken / verifySessionToken", () => {
 
 	it("rejects malformed payload role", async () => {
 		const key = new TextEncoder().encode(SECRET);
-		const token = await new jose.SignJWT({
+		const token = await new SignJWT({
 			email: "e@e.com",
 			role: "admin",
 		})

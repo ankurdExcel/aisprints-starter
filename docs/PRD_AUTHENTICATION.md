@@ -301,18 +301,19 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ---
 
-### Phase 6: Protection & role routing - ⏳ PLANNED
+### Phase 6: Protection & role routing - ✅ COMPLETED
 
 **Objective**: Middleware or layout guards; faculty vs student landing shells.
 
 **TDD note**: Unit-test small pure helpers (e.g. “required role from JWT payload”) if middleware is hard to run in Vitest; integration test optional.
 
 **Tasks**
-1. Middleware or layout checks session + role.
-2. Harden protected routes (placeholder `/faculty` and `/student` exist from Phase 5 but are not guarded yet).
+1. **Edge `middleware.ts`**: read `qm_session`, verify HS256 JWT with `JWT_SECRET` (no D1); enforce role for `/faculty/**` and `/student/**`; wrong role → redirect to that user’s dashboard; missing/invalid session → `/login?returnUrl=…`.
+2. **Post-auth `returnUrl`**: login/signup read `returnUrl` (sanitized); cross-role or unsafe URLs fall back to role home.
 
 **Deliverables**
-- `middleware.ts` (if used), protected route groups, minimal landing UIs.
+- `src/middleware.ts` + `src/lib/auth/route-guard.ts` + `route-guard.test.ts`; `src/lib/auth/jwt-verify.ts` (middleware imports this entry only, not full `jwt` barrel).
+- `/faculty` and `/student` remain minimal shells but are now protected.
 
 ---
 
@@ -325,7 +326,8 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 - `src/lib/auth/password.ts`, `jwt.ts`, `roles.ts` + tests — hashing and HS256 session JWT (Phase 3).
 - `src/lib/services/user-service.ts` + test — user CRUD/read for auth (Phase 3).
 - `src/app/api/auth/signup|login|logout|me/route.ts` — Auth HTTP handlers (Phase 4).
-- `middleware.ts` — Optional cookie/JWT edge checks (respect Next.js + OpenNext constraints on Edge runtime).
+- `src/middleware.ts` — Edge JWT checks for `/faculty/**` and `/student/**` (no D1); `src/lib/auth/route-guard.ts` for path role + safe `returnUrl`.
+- `src/lib/auth/jwt-verify.ts`, `jwt-sign.ts`, `jwt-crypto.ts` — Split so middleware does not import `jose` JWE paths (Edge-safe).
 - `.dev.vars` — `JWT_SECRET` and any auth-related secrets (document in README, never commit secrets).
 
 ### Implementation Patterns
@@ -348,7 +350,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 - [ ] User can log in; invalid credentials show a single generic message (no user enumeration).
 - [ ] Session is stored in an HTTP-only cookie; client JS cannot read the token.
 - [ ] Logout clears the session cookie.
-- [ ] Faculty cannot access student-only routes and vice versa (with sensible redirect).
+- [x] Faculty cannot access student-only routes and vice versa (with sensible redirect).
 - [ ] Passwords are stored as one-way hashes only.
 - [ ] All new tables include audit columns as specified (`created_at`, `updated_at`, `created_by`, `updated_by` where applicable).
 - [ ] **TDD**: D1 client, auth services/primitives, and auth API layers have Vitest coverage as described in Testing Strategy; `npm test` passes for the auth track.
@@ -425,6 +427,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Phase 6 — Protection & role routing  
-**Status**: Phases 1–5 complete  
-**Next Steps**: Middleware or layout guards for `/faculty` and `/student`; optional JWT helpers tests.
+**Current Phase**: Auth PRD complete (Phases 1–6)  
+**Status**: All authentication phases in this document are implemented.  
+**Next Steps**: Product features per other PRDs (e.g. MCQ); optional hardening (rate limits, refresh tokens).
