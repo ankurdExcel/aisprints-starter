@@ -76,6 +76,8 @@ Set `JWT_SECRET` in `.dev.vars` (see `.dev.vars.example`): at least **32 charact
 | `POST` | `/api/auth/logout` | Clears session cookie |
 | `GET` | `/api/auth/me` | Current user from cookie + D1 |
 
+**Auth UI (Phase 5):** `/login`, `/signup` (session cookie on success). Role landing placeholders: `/faculty`, `/student`.
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:

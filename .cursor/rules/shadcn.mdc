@@ -4,6 +4,16 @@ alwaysApply: true
 
 # Shadcn UI Best Practices
 
+## shadcn MCP server
+
+This workspace configures the official shadcn MCP server in `.cursor/mcp.json` (`npx shadcn@latest mcp`). When the shadcn MCP tools are available, use them for registry-backed work instead of guessing component names, props, or install commands.
+
+- **Discover and install:** Use the MCP server to browse registries, search for components or blocks, fetch item details, and obtain correct install commands. Prefer MCP-driven discovery before manually running `npx shadcn add` with guessed slugs.
+- **Registries:** MCP respects `components.json` (default shadcn/ui registry, namespaced registries, and other configured sources). If something is missing from the default registry, search or list via MCP rather than inventing paths.
+- **After install:** Continue importing from `@/components/ui` (or paths the CLI added). Do not bypass the installed component tree unless the user explicitly asks.
+
+When MCP is disabled or unavailable, fall back to the CLI and [shadcn/ui docs](https://ui.shadcn.com/docs).
+
 ## shadcn/ui Best Practices
 
 - **UI Components:** Use `shadcn/ui` for all UI elements. Do not use plain HTML elements for interactive components like `button`, `input`, or `table`.

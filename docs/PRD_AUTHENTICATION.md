@@ -32,7 +32,7 @@ This document specifies authentication and authorization for the Quiz Master app
 ### Stack Alignment
 - **Framework**: Next.js (App Router) on Cloudflare Workers via OpenNext.
 - **Database**: Cloudflare D1 (SQLite). All access through prepared statements via **`@/lib/d1-client`** (`src/lib/d1-client.ts`), delivered in **Implementation Phase 2** (helpers: normalize anonymous `?` → positional `?1`, `?2`, …, safe binding, `executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`, etc., per workspace D1 rules).
-- **UI**: shadcn/ui components for sign-up and login forms (Form + react-hook-form + zod).
+- **UI**: shadcn/ui components for sign-up and login forms (Field + Controller + react-hook-form + zod).
 - **Binding**: Per `wrangler.jsonc`, the D1 binding name is `tna_app_db` (database `tna-app-db`). TypeScript env types should match generated `cloudflare-env.d.ts` after `wrangler types`.
 
 ### Database Schema
@@ -286,18 +286,18 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ---
 
-### Phase 5: UI (shadcn) - ⏳ PLANNED
+### Phase 5: UI (shadcn) - ✅ COMPLETED
 
 **Objective**: Sign-up and login pages calling the APIs above.
 
 **TDD note**: Prefer **component tests** with `@testing-library/react` for critical form validation and submit behavior (mock `fetch`). Optional: thin e2e later; not required for MVP PRD.
 
 **Tasks**
-1. Add shadcn components (Form, Input, Button, etc.).
-2. Implement pages, loading and error states, redirects by role.
+1. Add shadcn components (Field, Input, Button, Card, RadioGroup, Sonner, etc.) + React Hook Form + Zod.
+2. Implement pages, loading and error states, redirects by role; redirect away if already authenticated (`GET /api/auth/me`).
 
 **Deliverables**
-- `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx` (or equivalent) + component tests where high value.
+- `src/app/(auth)/login/page.tsx`, `src/app/(auth)/signup/page.tsx` + colocated `page.test.ts` (jsdom; no JSX in tests due to `jsx: preserve` + Vitest); `src/lib/auth/client-schemas.ts`; `Toaster` + `ThemeProvider` in root layout.
 
 ---
 
@@ -309,7 +309,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 **Tasks**
 1. Middleware or layout checks session + role.
-2. Placeholder faculty and student landing pages.
+2. Harden protected routes (placeholder `/faculty` and `/student` exist from Phase 5 but are not guarded yet).
 
 **Deliverables**
 - `middleware.ts` (if used), protected route groups, minimal landing UIs.
@@ -425,6 +425,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Phase 5 — Auth UI (shadcn signup/login)  
-**Status**: Phases 1–4 complete  
-**Next Steps**: Signup/login pages, form validation, redirects by role; optional faculty/student shells.
+**Current Phase**: Phase 6 — Protection & role routing  
+**Status**: Phases 1–5 complete  
+**Next Steps**: Middleware or layout guards for `/faculty` and `/student`; optional JWT helpers tests.
