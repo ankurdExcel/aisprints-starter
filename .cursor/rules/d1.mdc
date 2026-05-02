@@ -8,7 +8,7 @@ alwaysApply: true
 
 - **Access:** The D1 database binding `DB` is accessible via the `env` object. For example: `const { results } = await env.DB.prepare(...)`.
 - **SQL Best Practices:** Use prepared statements to prevent SQL injection vulnerabilities.
-- **Client:** All D1 interactions should go through the `lib/d1-client.ts` module to centralize data access logic.
+- **Client:** All D1 interactions should go through `@/lib/d1-client` (`src/lib/d1-client.ts`) to centralize data access logic.
 
 ## Database Migrations
 
@@ -23,7 +23,7 @@ alwaysApply: true
 ## Parameter Binding Rules (IMPORTANT)
 
 - **Positional placeholders required:** To avoid D1 binding errors in local development, always normalize anonymous placeholders `?` to positional placeholders `?1`, `?2`, ... before binding parameters.
-- **Use shared helpers:** Always use the helpers in `lib/d1-client.ts` (`executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`) which:
+- **Use shared helpers:** Always use the helpers in `src/lib/d1-client.ts` (`executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`) which:
   - Normalize `?` → `?1`, `?2`, ... automatically
   - Bind parameters safely
   - Include a safe fallback for wrangler-dev binding quirks

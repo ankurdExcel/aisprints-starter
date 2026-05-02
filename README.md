@@ -55,6 +55,14 @@ After binding or schema changes, regenerate Worker env types:
 npm run cf-typegen
 ```
 
+### Unit tests
+
+```bash
+npm test
+```
+
+Uses [Vitest](https://vitest.dev/) (see `vitest.config.ts`). D1 helpers are covered in `src/lib/d1-client.test.ts` with mocked `D1Database` — no real D1 connection required.
+
 ## Preview
 
 Preview the application locally on the Cloudflare runtime:

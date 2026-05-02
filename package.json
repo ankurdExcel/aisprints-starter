@@ -11,7 +11,9 @@
 		"upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
 		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
-		"db:migrate:local": "wrangler d1 migrations apply tna-app-db --local"
+		"db:migrate:local": "wrangler d1 migrations apply tna-app-db --local",
+		"test": "npx vitest run",
+		"test:watch": "npx vitest"
 	},
 	"dependencies": {
 		"@opennextjs/cloudflare": "^1.11.0",
@@ -29,6 +31,7 @@
 		"eslint-config-next": "15.4.6",
 		"tailwindcss": "^4",
 		"typescript": "^5",
+		"vitest": "^4.1.5",
 		"wrangler": "^4.51.0"
 	}
 }

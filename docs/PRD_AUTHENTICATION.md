@@ -31,7 +31,7 @@ This document specifies authentication and authorization for the Quiz Master app
 
 ### Stack Alignment
 - **Framework**: Next.js (App Router) on Cloudflare Workers via OpenNext.
-- **Database**: Cloudflare D1 (SQLite). All access through prepared statements via **`lib/d1-client.ts`**, introduced in **Implementation Phase 2** (helpers: normalize anonymous `?` → positional `?1`, `?2`, …, safe binding, `executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`, etc., per workspace D1 rules).
+- **Database**: Cloudflare D1 (SQLite). All access through prepared statements via **`@/lib/d1-client`** (`src/lib/d1-client.ts`), delivered in **Implementation Phase 2** (helpers: normalize anonymous `?` → positional `?1`, `?2`, …, safe binding, `executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`, etc., per workspace D1 rules).
 - **UI**: shadcn/ui components for sign-up and login forms (Form + react-hook-form + zod).
 - **Binding**: Per `wrangler.jsonc`, the D1 binding name is `tna_app_db` (database `tna-app-db`). TypeScript env types should match generated `cloudflare-env.d.ts` after `wrangler types`.
 
@@ -235,9 +235,9 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 
 ---
 
-### Phase 2: D1 client - ⏳ PLANNED
+### Phase 2: D1 client - ✅ COMPLETED
 
-**Objective**: Shared **`lib/d1-client.ts`** module so all SQL goes through one place: placeholder normalization (`?` → `?1`, `?2`, …), safe binding, and helpers (`executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`, optional `generateId` if used).
+**Objective**: Shared **`src/lib/d1-client.ts`** (`@/lib/d1-client`) so all SQL goes through one place: placeholder normalization (`?` → `?1`, `?2`, …), safe binding, and helpers (`executeQuery`, `executeQueryFirst`, `executeMutation`, `executeBatch`, `generateId`, `getDatabase`).
 
 **TDD note**: **Write `lib/d1-client.test.ts` first** with a mock D1 database object; tests should fail until the client exists. Cover edge cases called out in workspace D1 rules (empty params, multiple placeholders, single-row reads).
 
@@ -247,7 +247,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 3. Green all client unit tests.
 
 **Deliverables**
-- `lib/d1-client.ts` + colocated `lib/d1-client.test.ts`.
+- `src/lib/d1-client.ts` + colocated `src/lib/d1-client.test.ts`; `vitest.config.ts`; `npm test` script.
 
 ---
 
@@ -318,7 +318,7 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ### Key Files (expected)
 
 - `wrangler.jsonc` — D1 binding `tna_app_db`.
-- `lib/d1-client.ts` + `lib/d1-client.test.ts` — All SQL execution (Phase 2).
+- `src/lib/d1-client.ts` + `src/lib/d1-client.test.ts` — All SQL execution (Phase 2); import as `@/lib/d1-client`.
 - `lib/auth/*` — JWT and password helpers.
 - `app/api/auth/*/route.ts` — Route handlers.
 - `middleware.ts` — Optional cookie/JWT edge checks (respect Next.js + OpenNext constraints on Edge runtime).
@@ -421,6 +421,6 @@ CREATE UNIQUE INDEX idx_users_email ON users(email);
 ## Current Status
 
 **Last Updated**: 2026-05-02  
-**Current Phase**: Phase 2 — D1 client (TDD)  
-**Status**: Phase 1 complete  
-**Next Steps**: Implement `lib/d1-client.ts` + colocated tests, then services → endpoints → UI → guards.
+**Current Phase**: Phase 3 — Services & auth primitives (TDD)  
+**Status**: Phases 1–2 complete  
+**Next Steps**: User service + password/JWT modules and tests, then API routes.

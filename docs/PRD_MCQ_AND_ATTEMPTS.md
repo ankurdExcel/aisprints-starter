@@ -33,7 +33,7 @@ This document covers faculty-facing multiple-choice question (MCQ) management—
 ### Stack Alignment
 
 - Next.js App Router, Server Actions and/or `app/api` routes per project conventions.
-- Cloudflare D1 via shared **`lib/d1-client.ts`** (delivered in **`PRD_AUTHENTICATION.md` Phase 2**). If MCQ work starts before that exists, complete the D1 client phase first—the MCQ track does not duplicate the client. Binding: `tna_app_db` per `wrangler.jsonc`.
+- Cloudflare D1 via shared **`@/lib/d1-client`** (`src/lib/d1-client.ts`, delivered in **`PRD_AUTHENTICATION.md` Phase 2**). If MCQ work starts before that exists, complete the D1 client phase first—the MCQ track does not duplicate the client. Binding: `tna_app_db` per `wrangler.jsonc`.
 - shadcn/ui for tables, dialogs, forms, toasts (e.g. Sonner), badges.
 - Faculty routes require `role === 'faculty'`; student routes require `role === 'student'`.
 
@@ -266,7 +266,7 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 - **Test-driven development**: Within each phase, **add or extend failing unit tests first** that describe the desired behavior (service methods, validation rules, grading math, attempt limits). Implement until tests **pass (green)**; refactor without changing behavior.
 - **Vitest** + colocated `*.test.ts`; follow `.cursor/rules/vitest-testing.mdc` (no placeholder tests, mock external dependencies, `beforeEach` clears mocks).
-- **Mock D1**: Never hit a real D1 instance in unit tests—mock `lib/d1-client` exports or inject a fake DB so services remain fast and deterministic.
+- **Mock D1**: Never hit a real D1 instance in unit tests—mock `@/lib/d1-client` exports or inject a fake DB so services remain fast and deterministic.
 
 ### Per-layer focus
 
@@ -292,7 +292,7 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 **Canonical build order**: **database migrations → (prerequisite: shared D1 client from auth) → services → API endpoints → faculty UI → student quiz/attempts → hardening / reporting**. Each phase uses **TDD**: failing tests first, then implementation until green.
 
-**Prerequisite**: `lib/d1-client.ts` from **`PRD_AUTHENTICATION.md` Phase 2**. If the client is not yet in the repo, complete that phase before MCQ **Phase 2** service tests that depend on SQL helpers.
+**Prerequisite**: `src/lib/d1-client.ts` from **`PRD_AUTHENTICATION.md` Phase 2**. If the client is not yet in the repo, complete that phase before MCQ **Phase 2** service tests that depend on SQL helpers.
 
 ### Phase 1: Database migrations - ⏳ PLANNED
 
@@ -313,7 +313,7 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 **Objective**: **`lib/services/mcq-service.ts`** (and **`lib/services/quiz-attempt-service.ts`** when attempts are in scope) containing all business logic and SQL via `d1-client`.
 
-**TDD note**: **Write `mcq-service.test.ts` first** (red): list empty, create with two options one correct, reject zero/two correct, update ownership denied for other user, delete cascades options. Mock **`lib/d1-client`**. Then implement service until green. Repeat for attempt service when implementing student flows.
+**TDD note**: **Write `mcq-service.test.ts` first** (red): list empty, create with two options one correct, reject zero/two correct, update ownership denied for other user, delete cascades options. Mock **`@/lib/d1-client`**. Then implement service until green. Repeat for attempt service when implementing student flows.
 
 **Tasks**
 1. Define service public API (types for MCQ DTOs, errors).
@@ -451,7 +451,7 @@ Centralize copy in a `lib/copy/professor.ts` or similar module for consistency a
 
 ### Internal
 
-- `PRD_AUTHENTICATION.md`: `users`, session, role guards, and **`lib/d1-client.ts`** (Phase 2)—required before MCQ service TDD.
+- `PRD_AUTHENTICATION.md`: `users`, session, role guards, and **`src/lib/d1-client.ts`** (Phase 2)—required before MCQ service TDD.
 - shadcn/ui, zod.
 
 ### External
