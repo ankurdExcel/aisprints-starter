@@ -7,7 +7,7 @@
 **Implicit quiz (backend-only for this track)**  
 The backend maintains **one logical quiz per faculty user** (created or ensured on first use). **All MCQs** created or listed for that faculty are **linked to that quiz** via `quiz_questions` (and `quizzes` row) **without any quiz picker or quiz-management UI**. When quiz authoring ships later, the same tables apply—**no DB upgrade scripts** are required for that transition if migrations ship the full schema now.
 
-**Already in the repo (auth Phase 6–7, outside MCQ numbered phases below):** Protected **`/faculty`** route with a shared app shell (`src/components/app/app-shell-header.tsx`, `app-shell-footer.tsx`), JWT middleware, and **placeholder** faculty UI—`src/app/faculty/page.tsx` shows a Card with “No MCQs available.” and a **disabled** “Create MCQ” button. MCQ work **replaces and wires** these placeholders; it does not need to recreate routing or the shell. The **`/student`** shell remains placeholder-only until the roadmap sprint.
+**Already in the repo (auth Phase 6–7, outside MCQ numbered phases below):** Protected **`/faculty`** route with a shared app shell (`src/components/app/app-shell-header.tsx`, `app-shell-footer.tsx`), JWT middleware, and faculty layout. The **MCQ track** wires `src/app/faculty/page.tsx` to the full MCQ dashboard (list, CRUD, preview); it does not recreate routing or the shell. The **`/student`** shell remains placeholder-only until the roadmap sprint.
 
 ---
 
@@ -177,7 +177,7 @@ On first MCQ operation for a faculty user, **ensure** a `quizzes` row exists wit
 - **Query parameters** (all optional; sensible defaults):
   - `page` — 1-based, default `1`.
   - `pageSize` — default **`15`**, max cap (e.g. 50) to avoid abuse.
-  - `sort` — allowed fields, e.g. `updated_at` asc/desc (document enum in OpenAPI/comments).
+  - `sort` — composite sort keys as implemented in `mcq-service` (e.g. `updated_at_desc`, `updated_at_asc`, `prompt_asc`, `prompt_desc`). The **faculty UI** maps these to **human-readable labels** on the sort **Select** trigger (Base UI `Select.Value` shows the raw value unless formatted—implementation uses the same labels as the dropdown items).
   - `q` — search string; filter **`prompt`** (SQLite `LIKE` with proper binding via `d1-client`).
 - **Response**: `{ items: [...], total: number, page, pageSize }` (or equivalent). Each item includes fields needed for the table and actions (id, prompt snippet or full prompt per UX, option count, `updated_at`, etc.). **Preview** uses `GET /api/faculty/mcqs/[id]` for full detail (same payload as edit).
 
@@ -222,7 +222,7 @@ On first MCQ operation for a faculty user, **ensure** a `quizzes` row exists wit
 
 **Target**
 
-- **Toolbar**: **Search** input (shadcn **Input**); optional **sort** control (shadcn **Select**); **Add MCQ** primary **Button**.
+- **Toolbar**: **Search** input (shadcn **Input**); **sort** control (shadcn **Select**)—URL/API may use keys such as `updated_at_desc`, but the **closed trigger must show friendly text** (e.g. “Updated (newest)”), not the raw key; **Add MCQ** primary **Button**.
 - **Table** (shadcn **Table** + **Pagination**): one row per MCQ; columns aligned with PRD (e.g. prompt preview, # options, updated, **actions**).
 - **Actions** per row: **Edit**, **Delete**, **Preview** (icons + accessible labels).
 - **Pagination**: **15 rows per page**; show total count if available from API.
@@ -232,11 +232,12 @@ On first MCQ operation for a faculty user, **ensure** a `quizzes` row exists wit
 #### Preview (student-style)
 
 - **Purpose**: Let faculty experience the question roughly as a **student** would—**without** seeing the keyed answer until they have **attempted** it.
+- **Opening / loading**: **`GET /api/faculty/mcqs/[id]`** can take noticeable time. The **Dialog opens immediately** on **Preview** with a **loading state**: spinner (**`Loader2`**), **Skeleton** placeholders, and **`previewLoadingDescription`** from `professor.ts` in the dialog description (`aria-busy` / `aria-live="polite"` on the loading region). On fetch **failure**, show the usual error **toast** and **close** the dialog. When data arrives, swap to the attempt/result flow below.
 - **Flow**:
   1. **Attempt step**: Show stem and all options as **selectable choices** (e.g. shadcn **RadioGroup** + **Button** “Submit answer” / equivalent). **Do not** show “Correct” badges or green/red answer-key styling for the keyed option in this step.
   2. **Result step**: After submit, show whether the **selected** option was **correct or incorrect** (clear copy + optional **Badge**). If the selection was **incorrect**, also indicate which option was the **correct** one (so the preview remains useful for authoring QA). Offer **Try again** to return to the attempt step with the same question (clears selection).
 - **Data**: Uses **`GET /api/faculty/mcqs/[id]`** (faculty payload includes `is_correct`; UI gates display until the result step). This is **not** a substitute for the roadmap **student attempt** API; it is **UX mimicry** only.
-- **Components**: shadcn **Dialog** (or Sheet), **RadioGroup**, **Button**, **Badge** as needed; copy from **`professor.ts`** where it fits.
+- **Components**: shadcn **Dialog** (or Sheet), **RadioGroup**, **Button**, **Badge**, **Skeleton** as needed; copy from **`professor.ts`** where it fits.
 
 ### Faculty MCQ form (create / edit)
 
@@ -266,8 +267,10 @@ On first MCQ operation for a faculty user, **ensure** a `quizzes` row exists wit
 | Delete confirm | “Shred this question? Even my worst exams got a second glance.” |
 | Save success | “Splendid. Another pearl for the quiz necklace.” |
 | Validation | “Every multiple-choice needs a victor—tag one option as correct.” |
-| Preview (correct) | “Correct. Gold star material.” (example; tune in `professor.ts`) |
-| Preview (incorrect) | “Not this time—the key lives elsewhere.” (example) |
+| Preview (loading) | “Pulling the question from the shelf—please wait.” (`previewLoadingDescription`) |
+| Preview (attempt) | “Answer as a student would—feedback appears only after you submit.” |
+| Preview (correct headline / body) | “Correct” / “Right on the mark. The students will feel that one.” |
+| Preview (incorrect headline / body) | “Incorrect” / “Not this time—and here is the keyed answer for your notes.” |
 
 Centralize copy in `src/lib/copy/professor.ts` (or equivalent).
 
@@ -291,7 +294,7 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 | **Phase 1 — Migrations** | No unit tests required for `.sql` migration files alone. Primary verification: local migration apply; optional documented smoke queries in troubleshooting. **Phase 2 must not start** until the schema is applied locally so service tests target the real DDL contract. |
 | **MCQ service** (`mcq-service.ts`) | **Red first**: `mcq-service.test.ts` specifies list (**pagination, sort, search**), create/update/delete, **implicit quiz** + `quiz_questions` rows, ownership denial, rejection of zero or multiple correct options, transaction boundaries. Mock **`@/lib/d1-client`**. |
 | **Faculty API route handlers** | **Red first**: colocated `route.test.ts` (or shared handler test pattern used in auth) with `NextRequest` / `Request` stubs, **mocked mcq-service** (or mocked env + DB as in auth routes); assert **200/201/400/403/404**, list query parsing, and response JSON shapes. No real Worker or D1. |
-| **Faculty UI (Phase 4)** | Prefer **component or page tests** with **`@testing-library/react`** for **form validation** (exactly one correct answer), **delete confirm** flow, **preview attempt → result** (select option, submit, assert correct/incorrect copy), and critical table interactions; **mock `fetch`** to Phase 3 APIs. Match auth UI pattern where applicable: colocated **`page.test.ts`**, jsdom, **no JSX in test files** if the project keeps **`jsx: preserve`** + Vitest constraints. Thin e2e optional; not required for this PRD. |
+| **Faculty UI (Phase 4)** | Prefer **component or page tests** with **`@testing-library/react`** for **form validation** (exactly one correct answer), **delete confirm** flow, **preview attempt → result** (select option, submit, assert **correct** and **incorrect** headlines / copy), and critical table interactions; **mock `fetch`** to Phase 3 APIs. Match auth UI pattern where applicable: colocated **`page.test.ts`**, jsdom, **no JSX in test files** if the project keeps **`jsx: preserve`** + Vitest constraints. Preview **loading** UI is optional in tests (often too fast under mocks). Thin e2e optional; not required for this PRD. |
 
 ### Deferred (roadmap sprint)
 
@@ -319,22 +322,21 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 
 ---
 
-### Phase 1: Database migrations — ⏳ PLANNED
+### Phase 1: Database migrations — ✅ DONE
 
 **Objective**: D1 schema for `mcq_questions`, `mcq_options`, `quizzes`, `quiz_questions`, `quiz_attempts`, `quiz_attempt_answers`, indexes (including author and any columns used for sort/search). Document **`max_attempts` NULL = unlimited** in SQL comments.
 
+**Delivered**: `migrations/0002_mcq_quizzes_and_attempts.sql` (with prior user migration(s) such as `0001_create_users.sql`). Apply **locally** with Wrangler per project rules; **do not** apply remote migrations unless explicitly requested.
+
 **TDD note** (same convention as **`PRD_AUTHENTICATION.md` Phase 1**): Migrations are **SQL artifacts**. **Do not** add Vitest suites that merely duplicate DDL strings. Primary verification: **`wrangler d1 migrations apply --local`** (or project equivalent). Optionally document manual smoke **`SELECT`**s (e.g. `sqlite_master`, row counts) in **Troubleshooting** or phase notes. **`cloudflare-env.d.ts`** / Wrangler types: update if new bindings or conventions require it.
 
-**Tasks**
+**Tasks** (complete): Author migrations for all tables/indexes; apply **locally only** unless remote apply is explicitly requested.
 
-1. Author Wrangler D1 migrations for **all** tables and indexes.
-2. Apply **locally only** unless remote apply is explicitly requested.
-
-**Deliverables**: Migration SQL under the project `migrations/` convention.
+**Deliverables** (shipped): migration SQL under `migrations/` as above.
 
 ---
 
-### Phase 2: MCQ service (faculty + implicit quiz) — ⏳ PLANNED
+### Phase 2: MCQ service (faculty + implicit quiz) — ✅ DONE
 
 **Objective**: `src/lib/services/mcq-service.ts` — CRUD, transactions for options, **ensure implicit quiz** per faculty, **sync `quiz_questions`** on create/delete (and on update if linkage rules change), **list with `page`, `pageSize` (default 15), `sort`, `q`**.
 
@@ -345,7 +347,7 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 
 ---
 
-### Phase 3: Faculty API endpoints — ⏳ PLANNED
+### Phase 3: Faculty API endpoints — ✅ DONE
 
 **Objective**: Route handlers for `GET` list (query params), `GET` by id, `POST`, `PATCH`, `DELETE` under `src/app/api/faculty/mcqs/`.
 
@@ -355,9 +357,9 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 
 ---
 
-### Phase 4: Faculty MCQ UI — ⏳ PLANNED
+### Phase 4: Faculty MCQ UI — ✅ DONE
 
-**Objective**: Full **table** experience: **search**, **sort**, **pagination (15)**, row actions **Edit / Delete / Preview** (preview = **student-style attempt then feedback**), **Add MCQ** form (shadcn form controls), delete **AlertDialog**, toasts, **shadcn empty state**, `professor.ts` strings.
+**Objective**: Full **table** experience: **search**, **sort** (friendly labels on the Select trigger), **pagination (15)**, row actions **Edit / Delete / Preview** (preview = **student-style attempt then feedback**, with **immediate dialog + loading** while detail loads), **Add MCQ** form (shadcn form controls), delete **AlertDialog**, toasts, **shadcn empty state**, `professor.ts` strings.
 
 **TDD note** (same rhythm as **`PRD_AUTHENTICATION.md` Phase 5**): Prefer **failing tests first** for the highest-risk UX: **form validation** (exactly one correct answer), **delete confirmation**, and any **client-side list URL state** that must stay in sync with the API. Use **`@testing-library/react`**; **mock `fetch`**. Colocate **`page.test.ts`** (or component `*.test.tsx` if the project allows JSX in tests); if the repo standard matches auth, use **jsdom** and **avoid JSX in `*.test.ts` files** when `jsx: preserve` applies.
 
@@ -391,11 +393,12 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 - `src/app/faculty/page.tsx` — evolve in Phase 4
 - `src/app/student/page.tsx` — **roadmap** only
 
-**MCQ track (to add)**
+**MCQ track (implemented)**
 
-- `src/lib/services/mcq-service.ts`
-- `src/app/api/faculty/mcqs/**`
-- `src/components/faculty/mcq-*` (table, form, preview, delete dialog)
+- `src/lib/services/mcq-service.ts` (+ colocated tests)
+- `src/app/api/faculty/mcqs/**` (+ colocated `route.test.ts` where present)
+- `src/components/faculty/faculty-mcq-dashboard.tsx` (table, form, preview, delete)
+- `src/app/faculty/page.tsx` (+ colocated `page.test.ts` for critical flows)
 - `src/lib/copy/professor.ts`
 
 **Deferred**
@@ -412,14 +415,14 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 
 ## Success criteria (this track)
 
-- [ ] Faculty can **list** MCQs with **pagination (15)**, **sort**, and **search** on prompt.
-- [ ] Faculty can **create**, **edit**, **delete** MCQs with validation (exactly one correct option).
-- [ ] Faculty can **preview** an MCQ in a **student-style** flow: **choose an answer**, **submit**, then see **correct / incorrect** (and the keyed correct option if wrong); optional **Try again** to repeat the attempt step.
-- [ ] New MCQs are **linked** to the **implicit per-faculty quiz** in the database.
-- [ ] Empty list shows a **shadcn-based** empty state and professor persona copy.
-- [ ] Toasts and confirmations follow persona guidelines.
-- [ ] **Full schema** including attempt tables exists in migrations (no later rewrite for quiz/MCQ core).
-- [ ] **TDD**: Same bar as auth—**Phases 2–4** ship with **Vitest** coverage per [Testing strategy (TDD)](#testing-strategy-tdd); **`npm test`** passes; **no placeholder tests**; **Phase 1** verified by **local migration apply** (not Vitest on raw SQL).
+- [x] Faculty can **list** MCQs with **pagination (15)**, **sort**, and **search** on prompt.
+- [x] Faculty can **create**, **edit**, **delete** MCQs with validation (exactly one correct option).
+- [x] Faculty can **preview** an MCQ in a **student-style** flow: **choose an answer**, **submit**, then see **correct / incorrect** (and the keyed correct option if wrong); **Try again** repeats the attempt step. **While the preview loads**, the dialog shows a **clear loading state** (spinner + skeleton + copy).
+- [x] New MCQs are **linked** to the **implicit per-faculty quiz** in the database.
+- [x] Empty list shows a **shadcn-based** empty state and professor persona copy.
+- [x] Toasts and confirmations follow persona guidelines.
+- [x] **Full schema** including attempt tables exists in migrations (no later rewrite for quiz/MCQ core).
+- [x] **TDD**: **Phases 2–4** ship with **Vitest** coverage per [Testing strategy (TDD)](#testing-strategy-tdd); **`npm test`** passes; **no placeholder tests**; **Phase 1** verified by **local migration apply** (not Vitest on raw SQL).
 
 **Deferred success criteria** (student attempts, grading UI, `max_attempts` enforcement in live flows, student GET without `is_correct`) apply to the **roadmap sprint**, not this track.
 
@@ -473,7 +476,7 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 ## Notes for AI agents
 
 1. Keep MCQ logic **server-authoritative**.  
-2. Update phase checkboxes in this file as phases complete.  
+2. Keep **phase headers**, **success criteria**, and **Current status** aligned with what is merged (this PRD lists Phases **1–4** as **done** as of last update).  
 3. Follow **TDD** exactly as in **`PRD_AUTHENTICATION.md`**: **tests before implementation** for Phases **2–4**; **Phase 1** = migrations + local apply only.  
 4. **Do not** apply remote D1 migrations unless the user requests.  
 5. **Student** and **attempt** implementation: see **Roadmap — future sprint**.  
@@ -484,7 +487,6 @@ This section is **aligned with** `PRD_AUTHENTICATION.md` **§ Testing Strategy (
 ## Current status
 
 **Last Updated**: 2026-05-04  
-**Active track**: Faculty MCQ management (Phases **1 → 4**).  
-**Current phase to implement**: **Phase 1** (migrations) — first implementation step after PRD approval.  
-**Status**: Auth + D1 client + faculty/student shells in repo. MCQ schema and services **not** started unless already present in tree.  
-**Next step after approval**: Phase 1 (migrations, local apply) → Phase 2 (**`mcq-service.test.ts` red first**, then `mcq-service`) → Phase 3 (**route tests red first**, then APIs) → Phase 4 (**UI tests red first** where specified, then faculty UI).
+**Active track**: Faculty MCQ management — **Phases 1–4 implemented** in tree (migrations, `mcq-service`, faculty REST routes, faculty dashboard on `/faculty`).  
+**Status**: Core MCQ CRUD + list (search/sort/pagination) + student-style **preview** (with **loading** UX) + professor copy (`src/lib/copy/professor.ts`) + Vitest coverage for service, routes, and key page flows (`src/app/faculty/page.test.ts` includes preview correct/incorrect paths).  
+**Next (roadmap sprint)**: Student quiz-taking, attempt APIs/services, and faculty quiz-management UI — see **Roadmap — future sprint** and **Future track phases** sections above.
