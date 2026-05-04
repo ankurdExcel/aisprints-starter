@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Resolver, useForm, useWatch } from "react-hook-form";
@@ -321,6 +321,8 @@ export function FacultyMcqDashboard() {
 		}
 	});
 
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewLoading, setPreviewLoading] = useState(false);
 	const [preview, setPreview] = useState<McqDetail | null>(null);
 	const [previewStage, setPreviewStage] = useState<PreviewStage>("attempt");
 	const [previewSelectedId, setPreviewSelectedId] = useState<string | null>(
@@ -328,12 +330,17 @@ export function FacultyMcqDashboard() {
 	);
 
 	const resetPreview = () => {
+		setPreviewOpen(false);
+		setPreviewLoading(false);
 		setPreview(null);
 		setPreviewStage("attempt");
 		setPreviewSelectedId(null);
 	};
 
 	const openPreview = async (id: string) => {
+		setPreviewOpen(true);
+		setPreviewLoading(true);
+		setPreview(null);
 		setPreviewStage("attempt");
 		setPreviewSelectedId(null);
 		try {
@@ -342,12 +349,16 @@ export function FacultyMcqDashboard() {
 			});
 			if (!res.ok) {
 				toast.error(await readErrorMessage(res));
+				resetPreview();
 				return;
 			}
 			const data = (await res.json()) as { mcq: McqDetail };
 			setPreview(data.mcq);
 		} catch {
 			toast.error(professorMcq.loadError);
+			resetPreview();
+		} finally {
+			setPreviewLoading(false);
 		}
 	};
 
@@ -717,17 +728,38 @@ export function FacultyMcqDashboard() {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={!!preview} onOpenChange={(open) => !open && resetPreview()}>
+			<Dialog open={previewOpen} onOpenChange={(open) => !open && resetPreview()}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle>{professorMcq.previewDialogTitle}</DialogTitle>
 						<DialogDescription>
-							{previewStage === "attempt"
-								? professorMcq.previewAttemptDescription
-								: professorMcq.previewResultDescription}
+							{previewLoading
+								? professorMcq.previewLoadingDescription
+								: previewStage === "attempt"
+									? professorMcq.previewAttemptDescription
+									: professorMcq.previewResultDescription}
 						</DialogDescription>
 					</DialogHeader>
-					{preview && (
+					{previewLoading && (
+						<div
+							className="flex flex-col items-center gap-4 py-6"
+							aria-busy="true"
+							aria-live="polite"
+						>
+							<Loader2
+								className="text-muted-foreground size-9 animate-spin"
+								aria-hidden
+							/>
+							<div className="w-full space-y-2">
+								<Skeleton className="h-4 w-full" />
+								<Skeleton className="h-4 w-[88%]" />
+								<Skeleton className="mt-3 h-12 w-full" />
+								<Skeleton className="h-12 w-full" />
+								<Skeleton className="h-12 w-full" />
+							</div>
+						</div>
+					)}
+					{!previewLoading && preview && (
 						<div className="space-y-4 text-sm">
 							<p className="font-medium leading-snug">{preview.prompt}</p>
 

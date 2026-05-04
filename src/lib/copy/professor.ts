@@ -16,6 +16,8 @@ export const professorMcq = {
 
 	/** Preview dialog — student-style attempt, then feedback (faculty GET still carries `is_correct`; UI hides it until submit). */
 	previewDialogTitle: "Preview",
+	previewLoadingDescription:
+		"Pulling the question from the shelf—please wait.",
 	previewAttemptDescription:
 		"Answer as a student would—feedback appears only after you submit.",
 	previewResultDescription:
