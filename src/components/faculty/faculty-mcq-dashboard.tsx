@@ -87,6 +87,10 @@ function isMcqSortField(v: string): v is McqSortField {
 	return SORT_OPTIONS.some((o) => o.value === v);
 }
 
+function labelForSortField(field: McqSortField): string {
+	return SORT_OPTIONS.find((o) => o.value === field)?.label ?? field;
+}
+
 type ListResponse = {
 	items: {
 		id: string;
@@ -446,7 +450,14 @@ export function FacultyMcqDashboard() {
 							}}
 						>
 							<SelectTrigger className="w-full sm:w-48">
-								<SelectValue placeholder="Sort by" />
+								<SelectValue placeholder="Sort by">
+									{(v) =>
+										v != null &&
+										typeof v === "string" &&
+										isMcqSortField(v)
+											? labelForSortField(v)
+											: "Sort by"}
+								</SelectValue>
 							</SelectTrigger>
 							<SelectContent>
 								{SORT_OPTIONS.map((o) => (
