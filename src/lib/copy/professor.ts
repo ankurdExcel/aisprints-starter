@@ -18,6 +18,8 @@ export const professorMcq = {
 	previewDialogTitle: "Preview",
 	previewAttemptDescription:
 		"Answer as a student would—feedback appears only after you submit.",
+	previewResultDescription:
+		"Your attempt is graded below—the same rhythm students will see once attempts ship.",
 	previewPickFirstHint: "Select an option, then submit.",
 	previewSubmitAnswer: "Submit answer",
 	previewTryAgain: "Try again",

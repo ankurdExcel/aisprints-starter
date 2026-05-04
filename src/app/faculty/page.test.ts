@@ -73,4 +73,172 @@ describe("FacultyMcqListPage", () => {
 			screen.getByRole("heading", { name: /^Add MCQ$/i, hidden: true }),
 		).toBeInTheDocument();
 	});
+
+	it("preview: select answer then submit shows correct feedback", async () => {
+		const user = userEvent.setup();
+		fetchMock.mockImplementation((input: RequestInfo | URL) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url.includes("/api/faculty/mcqs/q1")) {
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							mcq: {
+								id: "q1",
+								prompt: "Capital of France?",
+								authorUserId: "u1",
+								createdAt: "c",
+								updatedAt: "u",
+								options: [
+									{
+										id: "o1",
+										label: null,
+										body: "Paris",
+										isCorrect: true,
+										sortOrder: 0,
+									},
+									{
+										id: "o2",
+										label: null,
+										body: "London",
+										isCorrect: false,
+										sortOrder: 1,
+									},
+								],
+							},
+						}),
+						{ status: 200 },
+					),
+				);
+			}
+			if (url.includes("/api/faculty/mcqs")) {
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							items: [
+								{
+									id: "q1",
+									prompt: "Capital of France?",
+									optionCount: 2,
+									updatedAt: "2026-01-01T00:00:00.000Z",
+								},
+							],
+							total: 1,
+							page: 1,
+							pageSize: 15,
+						}),
+						{ status: 200 },
+					),
+				);
+			}
+			return Promise.resolve(new Response("{}", { status: 404 }));
+		});
+
+		render(createElement(FacultyMcqListPage));
+		await waitFor(() => {
+			expect(screen.getByText("Capital of France?")).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole("button", { name: /^Preview$/i }));
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(professorMcq.previewAttemptDescription),
+			).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole("radio", { name: /Paris/i }));
+		await user.click(
+			screen.getByRole("button", { name: professorMcq.previewSubmitAnswer }),
+		);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(professorMcq.previewResultHeadlineCorrect),
+			).toBeInTheDocument();
+		});
+	});
+
+	it("preview: select wrong answer then submit shows incorrect feedback", async () => {
+		const user = userEvent.setup();
+		fetchMock.mockImplementation((input: RequestInfo | URL) => {
+			const url = typeof input === "string" ? input : input.toString();
+			if (url.includes("/api/faculty/mcqs/q1")) {
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							mcq: {
+								id: "q1",
+								prompt: "Capital of France?",
+								authorUserId: "u1",
+								createdAt: "c",
+								updatedAt: "u",
+								options: [
+									{
+										id: "o1",
+										label: null,
+										body: "Paris",
+										isCorrect: true,
+										sortOrder: 0,
+									},
+									{
+										id: "o2",
+										label: null,
+										body: "London",
+										isCorrect: false,
+										sortOrder: 1,
+									},
+								],
+							},
+						}),
+						{ status: 200 },
+					),
+				);
+			}
+			if (url.includes("/api/faculty/mcqs")) {
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							items: [
+								{
+									id: "q1",
+									prompt: "Capital of France?",
+									optionCount: 2,
+									updatedAt: "2026-01-01T00:00:00.000Z",
+								},
+							],
+							total: 1,
+							page: 1,
+							pageSize: 15,
+						}),
+						{ status: 200 },
+					),
+				);
+			}
+			return Promise.resolve(new Response("{}", { status: 404 }));
+		});
+
+		render(createElement(FacultyMcqListPage));
+		await waitFor(() => {
+			expect(screen.getByText("Capital of France?")).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole("button", { name: /^Preview$/i }));
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(professorMcq.previewAttemptDescription),
+			).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole("radio", { name: /London/i }));
+		await user.click(
+			screen.getByRole("button", { name: professorMcq.previewSubmitAnswer }),
+		);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText(professorMcq.previewResultHeadlineIncorrect),
+			).toBeInTheDocument();
+		});
+	});
 });

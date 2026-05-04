@@ -72,6 +72,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { professorMcq } from "@/lib/copy/professor";
 import { mcqWriteBodySchema, type McqWriteBody } from "@/lib/faculty/mcq-api-schemas";
 import type { McqDetail, McqSortField } from "@/lib/services/mcq-service";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 15;
 
@@ -97,6 +98,8 @@ type ListResponse = {
 	page: number;
 	pageSize: number;
 };
+
+type PreviewStage = "attempt" | "result";
 
 async function readErrorMessage(res: Response): Promise<string> {
 	try {
@@ -315,8 +318,20 @@ export function FacultyMcqDashboard() {
 	});
 
 	const [preview, setPreview] = useState<McqDetail | null>(null);
+	const [previewStage, setPreviewStage] = useState<PreviewStage>("attempt");
+	const [previewSelectedId, setPreviewSelectedId] = useState<string | null>(
+		null,
+	);
+
+	const resetPreview = () => {
+		setPreview(null);
+		setPreviewStage("attempt");
+		setPreviewSelectedId(null);
+	};
 
 	const openPreview = async (id: string) => {
+		setPreviewStage("attempt");
+		setPreviewSelectedId(null);
 		try {
 			const res = await fetch(`/api/faculty/mcqs/${id}`, {
 				credentials: "include",
@@ -331,6 +346,12 @@ export function FacultyMcqDashboard() {
 			toast.error(professorMcq.loadError);
 		}
 	};
+
+	const previewWasCorrect = useMemo(() => {
+		if (!preview || !previewSelectedId) return false;
+		const picked = preview.options.find((o) => o.id === previewSelectedId);
+		return !!picked?.isCorrect;
+	}, [preview, previewSelectedId]);
 
 	const [deleteId, setDeleteId] = useState<string | null>(null);
 	const [deleteLoading, setDeleteLoading] = useState(false);
@@ -685,28 +706,143 @@ export function FacultyMcqDashboard() {
 				</DialogContent>
 			</Dialog>
 
-			<Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+			<Dialog open={!!preview} onOpenChange={(open) => !open && resetPreview()}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Preview</DialogTitle>
-						<DialogDescription>Faculty-only view including the answer key.</DialogDescription>
+						<DialogTitle>{professorMcq.previewDialogTitle}</DialogTitle>
+						<DialogDescription>
+							{previewStage === "attempt"
+								? professorMcq.previewAttemptDescription
+								: professorMcq.previewResultDescription}
+						</DialogDescription>
 					</DialogHeader>
 					{preview && (
-						<div className="space-y-3 text-sm">
-							<p className="font-medium">{preview.prompt}</p>
-							<ul className="space-y-2">
-								{preview.options.map((o) => (
-									<li
-										key={o.id}
-										className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2"
+						<div className="space-y-4 text-sm">
+							<p className="font-medium leading-snug">{preview.prompt}</p>
+
+							{previewStage === "attempt" ? (
+								<>
+									<RadioGroup
+										className="gap-2"
+										value={previewSelectedId ?? undefined}
+										onValueChange={(v) => {
+											if (typeof v === "string") setPreviewSelectedId(v);
+										}}
 									>
-										<span className="flex-1">{o.body}</span>
-										{o.isCorrect && (
-											<Badge variant="secondary">Correct</Badge>
+										{preview.options.map((o) => (
+											<div
+												key={o.id}
+												className="flex items-start gap-3 rounded-lg border p-3"
+											>
+												<RadioGroupItem
+													value={o.id}
+													id={`preview-opt-${o.id}`}
+													className="mt-0.5"
+												/>
+												<label
+													htmlFor={`preview-opt-${o.id}`}
+													className="flex-1 cursor-pointer leading-snug"
+												>
+													{o.body}
+												</label>
+											</div>
+										))}
+									</RadioGroup>
+									<p className="text-muted-foreground text-xs">
+										{professorMcq.previewPickFirstHint}
+									</p>
+									<DialogFooter className="gap-2 sm:justify-end">
+										<Button
+											type="button"
+											disabled={!previewSelectedId}
+											onClick={() => setPreviewStage("result")}
+										>
+											{professorMcq.previewSubmitAnswer}
+										</Button>
+									</DialogFooter>
+								</>
+							) : (
+								<>
+									<div
+										className={cn(
+											"rounded-lg border p-3",
+											previewWasCorrect
+												? "border-emerald-600/40 bg-emerald-500/10 dark:border-emerald-500/30"
+												: "border-destructive/40 bg-destructive/5",
 										)}
-									</li>
-								))}
-							</ul>
+									>
+										{previewWasCorrect ? (
+											<>
+												<p className="font-medium text-emerald-800 dark:text-emerald-300">
+													{professorMcq.previewResultHeadlineCorrect}
+												</p>
+												<p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+													{professorMcq.previewResultBodyCorrect}
+												</p>
+											</>
+										) : (
+											<>
+												<p className="font-medium text-destructive">
+													{professorMcq.previewResultHeadlineIncorrect}
+												</p>
+												<p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+													{professorMcq.previewResultBodyIncorrect}
+												</p>
+											</>
+										)}
+									</div>
+									<ul className="space-y-2">
+										{preview.options.map((o) => {
+											const isPick = o.id === previewSelectedId;
+											const wrongPick = !previewWasCorrect && isPick;
+											const rightPick = previewWasCorrect && isPick;
+											const showKeyed =
+												!previewWasCorrect && o.isCorrect && !isPick;
+											return (
+												<li
+													key={o.id}
+													className={cn(
+														"flex flex-wrap items-center gap-2 rounded-md border px-3 py-2",
+														wrongPick &&
+															"border-destructive/60 bg-destructive/5",
+														rightPick && "border-primary bg-primary/5",
+														showKeyed && "ring-2 ring-primary/25",
+													)}
+												>
+													<span className="min-w-0 flex-1">{o.body}</span>
+													{rightPick && (
+														<Badge variant="secondary">
+															{professorMcq.previewBadgeYourCorrect}
+														</Badge>
+													)}
+													{wrongPick && (
+														<Badge variant="destructive">
+															{professorMcq.previewBadgeYourIncorrect}
+														</Badge>
+													)}
+													{showKeyed && (
+														<Badge variant="secondary">
+															{professorMcq.previewBadgeCorrectKey}
+														</Badge>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+									<DialogFooter className="sm:justify-start">
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() => {
+												setPreviewStage("attempt");
+												setPreviewSelectedId(null);
+											}}
+										>
+											{professorMcq.previewTryAgain}
+										</Button>
+									</DialogFooter>
+								</>
+							)}
 						</div>
 					)}
 				</DialogContent>
